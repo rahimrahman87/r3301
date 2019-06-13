@@ -1,0 +1,251 @@
+# ppm to CR calculation for R3301
+
+import datetime
+import math
+import pylab
+import numpy
+
+# input values
+CR = 0.274 #mm/yr
+K  = 87500.0 #constant in CR formula
+D  = 7.916 #g/cm3 (Density of Stainless Steel)
+ID = 2185.0 #mm (Internal diameter of R3301)
+Radius = ID/2.0 #mm (Internal radius of R3301)
+ShellSideHeight = 40446.0 #mm (height of shell side of R3301)
+##Date1 = datetime.date(2018,9,16)
+##Date2 = datetime.date(2019,5,12)
+Vol_m3_R3301 = 162.0 #m^3
+Vol_L_R3301 = Vol_m3_R3301*1000.0 #L
+
+def ExposedTimeInHours(DateBegin,DateEnd):
+    
+    Exposed_Time_Day   = DateEnd - DateBegin
+    Exposed_Time_Seconds = datetime.timedelta.total_seconds(Exposed_Time_Day)
+    Exposed_Time_Hours = Exposed_Time_Seconds/(3600.0) #to be used for exposure time
+
+    return Exposed_Time_Hours #returning exposure time in Hours
+
+def SurfaceArea(Radius,ShellHeight):
+    Area_ShellSide = 2*math.pi*Radius*ShellHeight
+    Area_Dome = 2*math.pi*Radius**2
+    Total_Area = Area_ShellSide + 2*Area_Dome #Total area in mm^2
+    Total_Area_cm2 = Total_Area/(100*100) #Total area in cm^2
+    
+    return Total_Area_cm2 #returning total surface area in cm^2
+
+
+def WeightLoss(CR,K,Density,Area,Time):
+
+    WL = (CR/K)*(Density*Area*Time)
+
+    return WL #returning Weight Loss in gram
+
+TimeBegin = datetime.date(2018,9,16)
+TimeEnd   = datetime.date(2019,5,12)
+
+def SS_25_22_2_Cr(WeightLossCalc):
+    Weight_Cr = (25/100.0)*WeightLossCalc
+    #print Weight_Cr
+    return Weight_Cr #returning Chromium weight in gram
+
+def SS_25_22_2_Ni(WeightLossCalc):
+    Weight_Ni = (22/100.0)*WeightLossCalc
+    #print Weight_Ni
+    return Weight_Ni #returning Nickel weight in gram
+
+def SS_316LUG_Cr(WeightLossCalc):
+    Weight_Cr = (17/100.0)*WeightLossCalc
+    #print Weight_Cr
+    return Weight_Cr #returning Chromium weight in gram
+
+def SS_316LUG_Ni(WeightLossCalc):
+    Weight_Ni = (13/100.0)*WeightLossCalc
+    #print Weight_Ni
+    return Weight_Ni #returning Nickel weight in gram
+
+def SS_25_22_2_Cr_ppm(Cr_Weight):
+    Cr_ppm = Cr_Weight*1000/Vol_L_R3301
+    #print Cr_ppm
+    return Cr_ppm #returning Chromium ppm in 25-22-2
+
+def SS_25_22_2_Ni_ppm(Ni_Weight):
+    Ni_ppm = Ni_Weight*1000/Vol_L_R3301
+    #print Ni_ppm
+    return Ni_ppm #returning Nickel ppm in 25-22-2
+
+def SS_316LUG_Cr_ppm(Cr_Weight):
+    Cr_ppm = Cr_Weight*1000/Vol_L_R3301
+    #print Cr_ppm
+    return Cr_ppm #returning Chromium ppm in SS316LUG
+
+def SS_316LUG_Ni_ppm(Ni_Weight):
+    Ni_ppm = Ni_Weight*1000/Vol_L_R3301
+    #print Ni_ppm
+    return Ni_ppm #returning Nickel ppm in SS316LUG
+
+def looping_Chromium_for_plot():
+    array_CR = []
+    array_Cr_ppm_25_22_2 = []
+    array_Cr_ppm_316LUG  = []
+    for i in numpy.arange(0.001,0.3,0.001):
+        Total_weight_loss = WeightLoss(i,K,D,SurfaceArea(Radius,ShellSideHeight),ExposedTimeInHours(TimeBegin,TimeEnd))
+        Cr_weight_loss_25_22_2 = SS_25_22_2_Cr(Total_weight_loss)
+        Cr_weight_loss_316LUG  = SS_316LUG_Cr(Total_weight_loss)
+        Cr_ppm_25_22_2= SS_25_22_2_Cr_ppm(Cr_weight_loss_25_22_2)
+        Cr_ppm_316LUG = SS_316LUG_Cr_ppm(Cr_weight_loss_316LUG)
+        array_CR.append(i)
+        array_Cr_ppm_25_22_2.append(Cr_ppm_25_22_2)
+        array_Cr_ppm_316LUG.append(Cr_ppm_316LUG)
+
+    #pylab.plot(array_Cr_ppm_316LUG,array_CR,"rx-", label="Limit based on 316LUG")
+    #pylab.plot(array_Cr_ppm_25_22_2,array_CR,"ro-",label="Limit based on 25-22-2")
+    pylab.plot(array_CR,array_Cr_ppm_316LUG,"rx-", label="Limit based on 316LUG")
+    pylab.plot(array_CR,array_Cr_ppm_25_22_2,"ro-",label="Limit based on 25-22-2")
+    pylab.xlabel("Corrosion Rate, mm/year")
+    pylab.ylabel("Chromium ppm")
+    pylab.title("Chromium ppm vs Corrosion Rate")
+    pylab.legend(loc='lower center',frameon=False)
+    #pylab.legend(loc='upper left',fancybox=True, framealpha=0.5)
+    #pylab.xlim(0.0,1.0)
+    #pylab.ylim(0.0,25.0)
+    pylab.grid()
+    pylab.fill_between(array_CR,array_Cr_ppm_316LUG,array_Cr_ppm_25_22_2,color='red')
+    pylab.show()
+    return()
+    
+def looping_Nickel_for_plot():
+    array_CR = []
+    array_Ni_ppm_25_22_2 = []
+    array_Ni_ppm_316LUG  = []
+    for i in numpy.arange(0.001,0.3,0.001):
+        Total_weight_loss = WeightLoss(i,K,D,SurfaceArea(Radius,ShellSideHeight),ExposedTimeInHours(TimeBegin,TimeEnd))
+        Ni_weight_loss_25_22_2 = SS_25_22_2_Ni(Total_weight_loss)
+        Ni_weight_loss_316LUG  = SS_316LUG_Ni(Total_weight_loss)
+        Ni_ppm_25_22_2= SS_25_22_2_Ni_ppm(Ni_weight_loss_25_22_2)
+        Ni_ppm_316LUG = SS_316LUG_Ni_ppm(Ni_weight_loss_316LUG)
+        array_CR.append(i)
+        array_Ni_ppm_25_22_2.append(Ni_ppm_25_22_2)
+        array_Ni_ppm_316LUG.append(Ni_ppm_316LUG)
+
+    pylab.plot(array_CR,array_Ni_ppm_316LUG,"bx-", label="Limit based on 316LUG")
+    pylab.plot(array_CR,array_Ni_ppm_25_22_2,"bo-",label="Limit based on 25-22-2")
+    pylab.xlabel("Corrosion Rate, mm/year")
+    pylab.ylabel("Nickel ppm")
+    pylab.title("Nickel ppm vs Corrosion Rate")
+    pylab.legend(loc='lower center',frameon=False)
+    #pylab.legend(loc='upper left',fancybox=True, framealpha=0.5)
+    #pylab.xlim(0.0,1.0)
+    #pylab.ylim(0.0,25.0)
+    pylab.grid()
+    pylab.fill_between(array_CR,array_Ni_ppm_316LUG,array_Ni_ppm_25_22_2)
+    pylab.show()
+    return()
+
+
+def Determine_CR_from_Chromium_ppm(ppm):
+    array_CR = []
+    array_Cr_ppm_25_22_2 = []
+    array_Cr_ppm_316LUG  = []
+    for i in numpy.arange(0.001,0.3,0.001):
+        Total_weight_loss = WeightLoss(i,K,D,SurfaceArea(Radius,ShellSideHeight),ExposedTimeInHours(TimeBegin,TimeEnd))
+        Cr_weight_loss_25_22_2 = SS_25_22_2_Cr(Total_weight_loss)
+        Cr_weight_loss_316LUG  = SS_316LUG_Cr(Total_weight_loss)
+        Cr_ppm_25_22_2= SS_25_22_2_Cr_ppm(Cr_weight_loss_25_22_2)
+        Cr_ppm_316LUG = SS_316LUG_Cr_ppm(Cr_weight_loss_316LUG)
+        array_CR.append(i)
+        array_Cr_ppm_25_22_2.append(Cr_ppm_25_22_2)
+        array_Cr_ppm_316LUG.append(Cr_ppm_316LUG)
+
+    print ""
+    
+    for j in range(len(array_Cr_ppm_25_22_2)):
+        if array_Cr_ppm_25_22_2[j] < ppm:
+            #print j,array_Cr_ppm_25_22_2[j]
+            if array_Cr_ppm_25_22_2[j+1] > ppm:
+                #print "%.4f" %array_Cr_ppm_25_22_2[j],"ppm",array_CR[j],"mm/year; ","%.4f" %array_Cr_ppm_25_22_2[j+1],"ppm",array_CR[j+1],"mm/year"
+                m = (array_CR[j+1]-array_CR[j])/(array_Cr_ppm_25_22_2[j+1]-array_Cr_ppm_25_22_2[j])
+                c =  array_CR[j+1] - m*array_Cr_ppm_25_22_2[j+1] 
+                y = m*ppm+c #value for Corrosion Rate for required ppm value based on 25-22-2
+                print "Chromium content based on 25-22-2: ",ppm,"ppm translate to corrosion rate of","%.4f" %y,"mm/year"
+
+    for h in range(len(array_Cr_ppm_316LUG)):
+        if array_Cr_ppm_316LUG[h] < ppm:
+            #print j,array_Cr_ppm_25_22_2[j]
+            if array_Cr_ppm_316LUG[h+1] > ppm:
+                #print "%.4f" %array_Cr_ppm_316LUG[h],"ppm",array_CR[h],"mm/year; ","%.4f" %array_Cr_ppm_316LUG[h+1],"ppm",array_CR[h+1],"mm/year"
+                m = (array_CR[h+1]-array_CR[h])/(array_Cr_ppm_316LUG[h+1]-array_Cr_ppm_316LUG[h])
+                c =  array_CR[h+1] - m*array_Cr_ppm_316LUG[h+1] 
+                y = m*ppm+c #value for Corrosion Rate for required ppm value based on 316LUG
+                print "Chromium content based on 316LUG:  ",ppm,"ppm translate to corrosion rate of","%.4f" %y,"mm/year"
+    return()
+
+
+def Determine_CR_from_Nickel_ppm(ppm):
+    array_CR = []
+    array_Ni_ppm_25_22_2 = []
+    array_Ni_ppm_316LUG  = []
+    for i in numpy.arange(0.001,0.3,0.001):
+        Total_weight_loss = WeightLoss(i,K,D,SurfaceArea(Radius,ShellSideHeight),ExposedTimeInHours(TimeBegin,TimeEnd))
+        Ni_weight_loss_25_22_2 = SS_25_22_2_Ni(Total_weight_loss)
+        Ni_weight_loss_316LUG  = SS_316LUG_Ni(Total_weight_loss)
+        Ni_ppm_25_22_2= SS_25_22_2_Ni_ppm(Ni_weight_loss_25_22_2)
+        Ni_ppm_316LUG = SS_316LUG_Ni_ppm(Ni_weight_loss_316LUG)
+        array_CR.append(i)
+        array_Ni_ppm_25_22_2.append(Ni_ppm_25_22_2)
+        array_Ni_ppm_316LUG.append(Ni_ppm_316LUG)
+
+    print ""
+    
+    for j in range(len(array_Ni_ppm_25_22_2)):
+        if array_Ni_ppm_25_22_2[j] < ppm:
+            #print j,array_Cr_ppm_25_22_2[j]
+            if array_Ni_ppm_25_22_2[j+1] > ppm:
+                #print "%.4f" %array_Ni_ppm_25_22_2[j],"ppm",array_CR[j],"mm/year; ","%.4f" %array_Ni_ppm_25_22_2[j+1],"ppm",array_CR[j+1],"mm/year"
+                m = (array_CR[j+1]-array_CR[j])/(array_Ni_ppm_25_22_2[j+1]-array_Ni_ppm_25_22_2[j])
+                c =  array_CR[j+1] - m*array_Ni_ppm_25_22_2[j+1] 
+                y = m*ppm+c
+                print "Nickel content based on 25-22-2: ",ppm,"ppm translate to corrosion rate of","%.4f" %y,"mm/year"
+    
+
+    for h in range(len(array_Ni_ppm_25_22_2)):
+        if array_Ni_ppm_316LUG[h] < ppm:
+            #print j,array_Cr_ppm_25_22_2[j]
+            if array_Ni_ppm_316LUG[h+1] > ppm:
+                #print "%.4f" %array_Ni_ppm_316LUG[h],"ppm",array_CR[h],"mm/year; ","%.4f" %array_Ni_ppm_316LUG[h+1],"ppm",array_CR[h+1],"mm/year"
+                m = (array_CR[h+1]-array_CR[h])/(array_Ni_ppm_316LUG[h+1]-array_Ni_ppm_316LUG[h])
+                c =  array_CR[h+1] - m*array_Ni_ppm_316LUG[h+1] 
+                y = m*ppm+c
+                print "Nickel content based on 316LUG:  ",ppm,"ppm translate to corrosion rate of","%.4f" %y,"mm/year"
+    return()
+
+if __name__ == "__main__":
+    Question = "y"
+    
+    while Question == "y":
+        Ask1 = raw_input("""Choose your option (Press a or b or c or d & then press Enter):
+a) Plot Chromium Graph
+b) Plot Nickel Graph
+c) Determine Corrosion rate from Chromium ppm
+d) Determine corrosion rate from Nickel ppm \n""")
+        if Ask1 == "a":
+            looping_Chromium_for_plot()
+            Question = raw_input("Continue? (y or n) \n")
+        elif Ask1=="b":
+            looping_Nickel_for_plot()
+            Question = raw_input("Continue? (y or n) \n")
+        elif Ask1=="c":
+            Ask2 = raw_input("What is the value of the chromium ppm? Type a value and press Enter. \n")
+            Determine_CR_from_Chromium_ppm(float(Ask2))
+            print ""
+            Question = raw_input("Continue? (y or n) \n")
+        elif Ask1=="d":
+            Ask3 = raw_input("What is the value of the Nickel ppm? Type a value and press Enter. \n")
+            Determine_CR_from_Nickel_ppm(float(Ask3))
+            print ""
+            Question = raw_input("Continue? (y or n) \n")
+            
+        else:
+            continue
+
+    
+        
